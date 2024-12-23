@@ -59,6 +59,15 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 // Авторизація користувача
 func LoginUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	var user models.User
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&user)
@@ -67,23 +76,15 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Перевірка email та пароля
 	userFromDB, err := repo.GetUserByEmail(user.Email)
 	if err != nil || !utils.CheckPasswordHash(user.Password, userFromDB.Password) {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
-	// Додаємо роль до контексту
-	ctx := context.WithValue(r.Context(), RoleKey, userFromDB.Role)
-
-	// Створюємо ResponseWriter з новим контекстом
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Login successful"))
-	})
-
-	// Викликаємо наступний хендлер з новим контекстом
-	next.ServeHTTP(w, r.WithContext(ctx))
+	// Возвращаем текст
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Login successful"))
 }
 
 // Перевірка ролі користувача
