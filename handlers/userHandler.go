@@ -230,8 +230,17 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Перетворюємо MongoDB _id у зручний формат
+	userResponse := map[string]interface{}{
+		"userID":         user.UserID,
+		"fullName":       user.FullName,
+		"email":          user.Email,
+		"profilePicture": user.ProfilePicture,
+		"role":           user.Role,
+	}
+
 	// Повертаємо успішну відповідь із даними користувача
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(user)
+	json.NewEncoder(w).Encode(userResponse)
 }
