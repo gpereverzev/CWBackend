@@ -211,14 +211,21 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "User account deleted"})
 }
 
-// GetUserByID - Отримання користувача за його ID
+// GetUserByID - Отримання користувача за його userID
 func GetUserByID(w http.ResponseWriter, r *http.Request) {
 	// Отримуємо userID з параметрів запиту
 	vars := mux.Vars(r)
 	userIDStr := vars["id"]
 
+	// Конвертуємо userID у int
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, "Invalid user ID format", http.StatusBadRequest)
+		return
+	}
+
 	// Отримуємо користувача з бази даних
-	user, err := repo.GetUserByID(userIDStr)
+	user, err := repo.GetUserByID(userID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Could not retrieve user: %v", err), http.StatusInternalServerError)
 		return
@@ -230,7 +237,7 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Перетворюємо MongoDB _id у зручний формат
+	// Формуємо JSON-відповідь
 	userResponse := map[string]interface{}{
 		"userID":         user.UserID,
 		"fullName":       user.FullName,
