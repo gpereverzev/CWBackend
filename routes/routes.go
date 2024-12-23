@@ -37,6 +37,7 @@ func InitializeRoutes() *mux.Router {
 	r.HandleFunc("/transaction/{transactionID}", handlers.DeleteTransaction).Methods("DELETE")
 	r.HandleFunc("/transactions/filter", handlers.FilterByDate).Methods("GET")
 	r.HandleFunc("/transactions/balance", handlers.CalculateBalance).Methods("GET")
+	r.HandleFunc("/transactions", handlers.GetAllTransactions).Methods("GET")
 
 	r.HandleFunc("/budgets", handlers.CreateBudget).Methods("POST")
 

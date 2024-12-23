@@ -15,10 +15,9 @@ func main() {
 
 	// Налаштування CORS
 	corsHandler := handlers.CORS(
-		handlers.AllowedOrigins([]string{"https://example.com", "https://another-domain.com"}), // Список дозволених доменів
-		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),           // Дозволені методи
-		handlers.AllowedHeaders([]string{"Origin", "Content-Type", "Accept", "Authorization"}), // Дозволені заголовки
-		handlers.AllowCredentials(), // Дозволити передачу cookies
+		handlers.AllowedOrigins([]string{"*"}), // Разрешить доступ с любых источников
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
+		handlers.AllowedHeaders([]string{"Origin", "Content-Type", "Accept", "Authorization"}),
 	)(r)
 
 	// Запуск сервера на порту 8080

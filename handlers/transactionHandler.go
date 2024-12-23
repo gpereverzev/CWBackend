@@ -2,8 +2,10 @@
 package handlers
 
 import (
+	"cashWise/db"
 	"cashWise/models"
 	"cashWise/repo"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // AddTransaction - додає нову транзакцію
@@ -146,4 +149,32 @@ func CalculateBalance(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]float64{"balance": balance})
+}
+
+func GetAllTransactions(w http.ResponseWriter, r *http.Request) {
+	// Отримання колекції
+	collection := db.GetTransactionCollection()
+
+	// Контекст із таймаутом
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Отримання всіх документів
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		http.Error(w, "Error retrieving transactions", http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	// Збирання результатів
+	var transactions []bson.M
+	if err := cursor.All(ctx, &transactions); err != nil {
+		http.Error(w, "Error processing transactions", http.StatusInternalServerError)
+		return
+	}
+
+	// Відправка JSON-відповіді
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(transactions)
 }
