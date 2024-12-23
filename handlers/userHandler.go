@@ -63,11 +63,13 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
+	// Обработка preflight-запроса
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
+	// Парсинг тела запроса
 	var user models.User
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&user)
@@ -76,15 +78,22 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получение пользователя из базы данных
 	userFromDB, err := repo.GetUserByEmail(user.Email)
 	if err != nil || !utils.CheckPasswordHash(user.Password, userFromDB.Password) {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
-	// Возвращаем текст
+	// Формирование JSON-ответа
+	response := map[string]interface{}{
+		"message": "Login successful",
+		"userID":  userFromDB.UserID,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Login successful"))
+	json.NewEncoder(w).Encode(response)
 }
 
 // Перевірка ролі користувача
