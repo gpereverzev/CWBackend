@@ -25,6 +25,9 @@ func InitializeRoutes() *mux.Router {
 	// Маршрут для видалення акаунту
 	r.HandleFunc("/delete-user/{userID}", handlers.DeleteUser).Methods("DELETE")
 
+	// Роут для отримання даних користувача по його айдi
+	r.HandleFunc("/getUserByID/{id}", handlers.GetUserByID).Methods("GET")
+
 	// Маршрути для категорій
 	r.HandleFunc("/create-category", handlers.CreateCategory).Methods("POST")
 	r.HandleFunc("/edit-category/{categoryID}", handlers.EditCategory).Methods("PUT")
@@ -32,6 +35,10 @@ func InitializeRoutes() *mux.Router {
 	r.HandleFunc("/categories/{budgetID}", handlers.GetCategoriesByBudgetID).Methods("GET")
 
 	// main.go
+
+	//Получить ТоталБаланс в +
+	//Получить ТоталБаланс в -
+
 	r.HandleFunc("/transaction", handlers.AddTransaction).Methods("POST")
 	r.HandleFunc("/transaction/{transactionID}", handlers.EditTransaction).Methods("PUT")
 	r.HandleFunc("/transaction/{transactionID}", handlers.DeleteTransaction).Methods("DELETE")
@@ -50,6 +57,7 @@ func InitializeRoutes() *mux.Router {
 	// Перевірка ліміту бюджету
 	r.HandleFunc("/budgets/{budgetID}/check-limit", handlers.CheckLimit).Methods("GET")
 
+	//Получение текущих накоплений
 	r.HandleFunc("/goals", handlers.CreateGoalHandler).Methods("POST")                        // Створення нової фінансової цілі
 	r.HandleFunc("/goals/{goalID}", handlers.EditGoalHandler).Methods("PUT")                  // Оновлення існуючої цілі
 	r.HandleFunc("/goals/{goalID}", handlers.DeleteGoalHandler).Methods("DELETE")             // Видалення цілі

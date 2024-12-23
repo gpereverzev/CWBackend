@@ -210,3 +210,28 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "User account deleted"})
 }
+
+// GetUserByID - Отримання користувача за його ID
+func GetUserByID(w http.ResponseWriter, r *http.Request) {
+	// Отримуємо userID з параметрів запиту
+	vars := mux.Vars(r)
+	userIDStr := vars["id"]
+
+	// Отримуємо користувача з бази даних
+	user, err := repo.GetUserByID(userIDStr)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Could not retrieve user: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Якщо користувач не знайдений
+	if user == nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	// Повертаємо успішну відповідь із даними користувача
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(user)
+}

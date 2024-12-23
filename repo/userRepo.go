@@ -5,8 +5,12 @@ import (
 	"cashWise/db"
 	"cashWise/models"
 	"context"
+	"errors"
+	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -80,4 +84,28 @@ func UserDelete(userID int) error {
 		return err
 	}
 	return nil
+}
+
+// GetUserByID - Отримання користувача за його ID з бази даних
+func GetUserByID(id string) (*models.User, error) {
+	// Перетворюємо ID у BSON ObjectID
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, errors.New("invalid user ID format")
+	}
+
+	// Пошук користувача за ID
+	var user models.User
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err = userCollection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil // User not found
+		}
+		return nil, fmt.Errorf("failed to fetch user: %v", err)
+	}
+
+	return &user, nil
 }
