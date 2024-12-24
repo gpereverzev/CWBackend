@@ -10,6 +10,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var userCollection *mongo.Collection
@@ -39,6 +40,15 @@ func CreateUser(user models.User) (models.User, error) {
 	return user, nil
 }
 
+// Функція для хешування пароля
+func hashPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedPassword), nil
+}
+
 // Функція для оновлення даних користувача
 func UserUpdate(userID int, updatedUser models.User) error {
 	// Оновлення даних користувача за userID
@@ -54,7 +64,12 @@ func UserUpdate(userID int, updatedUser models.User) error {
 		update["$set"].(bson.M)["email"] = updatedUser.Email
 	}
 	if updatedUser.Password != "" {
-		update["$set"].(bson.M)["password"] = updatedUser.Password
+		// Хешуємо пароль перед оновленням
+		hashedPassword, err := hashPassword(updatedUser.Password)
+		if err != nil {
+			return err
+		}
+		update["$set"].(bson.M)["password"] = hashedPassword
 	}
 	if updatedUser.ProfilePicture != "" {
 		update["$set"].(bson.M)["profilePicture"] = updatedUser.ProfilePicture

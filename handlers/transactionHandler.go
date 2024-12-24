@@ -150,12 +150,12 @@ func FilterByDate(w http.ResponseWriter, r *http.Request) {
 		endDate = startDate.Add(24 * time.Hour)
 	case "week":
 		weekday := date.Weekday()
-		offset := (int(weekday) - int(time.Monday) + 7) % 7
-		startDate = date.Add(-time.Duration(offset) * 24 * time.Hour)
-		endDate = startDate.Add(7 * 24 * time.Hour)
+		offset := (int(weekday) - int(time.Monday) + 7) % 7             // Розрахунок зсуву до понеділка
+		startDate = date.Add(-time.Duration(offset+7) * 24 * time.Hour) // На тиждень назад
+		endDate = startDate.Add(7 * 24 * time.Hour)                     // Додаємо 7 днів для кінця тижня
 	case "month":
 		startDate = time.Date(date.Year(), date.Month(), 1, 0, 0, 0, 0, date.Location())
-		endDate = startDate.AddDate(0, 1, 0)
+		endDate = startDate.AddDate(0, 1, -1) // Останній день місяця
 	default:
 		http.Error(w, "Invalid period, must be day, week, or month", http.StatusBadRequest)
 		return
@@ -228,7 +228,6 @@ func GetTotalExpense(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]float64{"totalExpense": totalExpense})
 }
 
-// GetTotalIncome - обробник для отримання загальної суми доходу для конкретного користувача
 func GetTotalIncome(w http.ResponseWriter, r *http.Request) {
 	// Отримання userID з параметрів запиту
 	userID := r.URL.Query().Get("userID")
@@ -245,14 +244,17 @@ func GetTotalIncome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Викликаємо функцію для обчислення загальної суми доходу
-	totalIncome, err := repo.CalculateTotalIncome(parsedUserID, "income")
+	// Тут ми використовуємо фільтр для доходу, так як категорія "income" передається в CalculateTotalIncome
+	totalIncome, err := repo.CalculateTotalIncome(parsedUserID)
 	if err != nil {
-		http.Error(w, "Error calculating total income", http.StatusInternalServerError)
+		// Виведення більш детальної помилки, якщо є проблеми з підключенням до бази даних або іншими аспектами
+		http.Error(w, fmt.Sprintf("Error calculating total income: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	// Повертаємо загальну суму доходу
 	w.Header().Set("Content-Type", "application/json")
+	// Відправляємо JSON-об'єкт з результатом
 	json.NewEncoder(w).Encode(map[string]float64{"totalIncome": totalIncome})
 }
 

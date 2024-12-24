@@ -143,10 +143,12 @@ func GetAllTransactions(userID int) ([]models.Transaction, error) {
 	return transactions, nil
 }
 
-func FilterExpenseTransactions() bson.M {
-	// Повертаємо фільтр, який шукає транзакції типу "expense"
+// Функція для фільтрації витрат
+func FilterExpenseTransactions(userID int) bson.M {
+	// Повертаємо фільтр, який шукає транзакції типу "expense" і належність до певного користувача
 	return bson.M{
-		"type": "expense", // Тип транзакції має бути "expense"
+		"type":   "expense", // Тип транзакції має бути "expense"
+		"userID": userID,    // Фільтруємо по userID
 	}
 }
 
@@ -156,8 +158,7 @@ func CalculateTotalExpense(userID int) (float64, error) {
 	collection := db.GetTransactionCollection()
 
 	// Фільтр для вибору транзакцій з типом "expense" і належністю конкретному користувачу
-	filter := FilterExpenseTransactions()
-	filter["userID"] = userID // Додаємо фільтрацію по userID
+	filter := FilterExpenseTransactions(userID)
 
 	// Контекст із таймаутом
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -191,19 +192,21 @@ func CalculateTotalExpense(userID int) (float64, error) {
 	return totalExpense, nil
 }
 
-func FilterIncomeTransactions() bson.M {
-	// Повертаємо фільтр, який шукає транзакції типу "income"
+// Функція для фільтрації доходів
+func FilterIncomeTransactions(userID int) bson.M {
+	// Повертаємо фільтр, який шукає транзакції типу "income" і належність до певного користувача
 	return bson.M{
-		"type": "income", // Тип транзакції має бути "expense"
+		"type":   "income", // Тип транзакції має бути "income"
+		"userID": userID,   // Фільтруємо по userID
 	}
 }
 
-// CalculateTotalAmount - обчислює загальну суму для певного користувача та категорії
-func CalculateTotalIncome(userID int, category string) (float64, error) {
+// Функція для обчислення загальної суми доходів з фільтрацією за userID
+func CalculateTotalIncome(userID int) (float64, error) {
 	collection := db.GetTransactionCollection()
 
 	// Отримуємо фільтр для доходів або витрат
-	filter := FilterIncomeTransactions()
+	filter := FilterIncomeTransactions(userID)
 
 	// Пошук транзакцій за фільтром
 	cursor, err := collection.Find(context.TODO(), filter)
