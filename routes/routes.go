@@ -36,17 +36,17 @@ func InitializeRoutes() *mux.Router {
 
 	// main.go
 
-	//Получить ТоталБаланс в +
-	//Получить ТоталБаланс в -
+	r.HandleFunc("/transaction/getTotalExpense", handlers.GetTotalExpense).Methods("GET") // Отримати загальну суму витрат для userID
+	r.HandleFunc("/transaction/getTotalIncome", handlers.GetTotalIncome).Methods("GET")   // Отримати загальну суму доходів для userID
 
-	r.HandleFunc("/transaction", handlers.AddTransaction).Methods("POST")
-	r.HandleFunc("/transaction/{transactionID}", handlers.EditTransaction).Methods("PUT")
-	r.HandleFunc("/transaction/{transactionID}", handlers.DeleteTransaction).Methods("DELETE")
-	r.HandleFunc("/transactions/filter", handlers.FilterByDate).Methods("GET")
-	r.HandleFunc("/transactions/balance", handlers.CalculateBalance).Methods("GET")
-	r.HandleFunc("/transactions", handlers.GetAllTransactions).Methods("GET")
+	r.HandleFunc("/transaction", handlers.AddTransaction).Methods("POST")                      // Додати транзакцію
+	r.HandleFunc("/transaction/{transactionID}", handlers.EditTransaction).Methods("PUT")      // Редагувати транзакцію
+	r.HandleFunc("/transaction/{transactionID}", handlers.DeleteTransaction).Methods("DELETE") // Видалити транзакцію
+	r.HandleFunc("/transactions/filter", handlers.FilterByDate).Methods("GET")                 // Фільтрувати транзакції за датою
+	r.HandleFunc("/transactions/balance", handlers.CalculateBalance).Methods("GET")            // Розрахувати баланс
+	r.HandleFunc("/transactions", handlers.GetAllTransactions).Methods("GET")                  // Отримати всі транзакції
 
-	r.HandleFunc("/budgets", handlers.CreateBudget).Methods("POST")
+	r.HandleFunc("/budgets", handlers.CreateBudget).Methods("POST") // Створити бюджет
 
 	// Отримання бюджету за ID
 	r.HandleFunc("/budgets/{budgetID}", handlers.GetBudgetByID).Methods("GET")

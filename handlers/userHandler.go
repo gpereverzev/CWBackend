@@ -239,11 +239,8 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 
 	// Формуємо JSON-відповідь
 	userResponse := map[string]interface{}{
-		"userID":         user.UserID,
-		"fullName":       user.FullName,
-		"email":          user.Email,
-		"profilePicture": user.ProfilePicture,
-		"role":           user.Role,
+		"userID":   user.UserID,
+		"fullName": user.FullName,
 	}
 
 	// Повертаємо успішну відповідь із даними користувача
