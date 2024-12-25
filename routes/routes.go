@@ -32,7 +32,8 @@ func InitializeRoutes() *mux.Router {
 	r.HandleFunc("/create-category", handlers.CreateCategory).Methods("POST")
 	r.HandleFunc("/edit-category/{categoryID}", handlers.EditCategory).Methods("PUT")
 	r.HandleFunc("/delete-category/{categoryID}", handlers.DeleteCategory).Methods("DELETE")
-	r.HandleFunc("/categories/{budgetID}", handlers.GetCategoriesByBudgetID).Methods("GET")
+	r.HandleFunc("/categories", handlers.GetAllCategoriesByUserID).Methods("GET")
+	r.HandleFunc("/category", handlers.GetCategoryByName).Methods("GET")
 
 	// main.go
 

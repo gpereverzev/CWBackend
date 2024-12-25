@@ -10,6 +10,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -17,6 +18,27 @@ var userCollection *mongo.Collection
 
 func init() {
 	userCollection = db.Client.Database("cashWiseDB").Collection("Users")
+}
+
+// Функція для отримання наступного значення ID
+func GetNextUserID() (int, error) {
+	// Оновлюємо лічильник в колекції Counters
+	filter := bson.M{"_id": "userID"} // ми будемо використовувати "userID" як ідентифікатор лічильника
+	update := bson.M{
+		"$inc": bson.M{"seq": 1}, // інкрементуємо значення на 1
+	}
+	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After) // створити документ, якщо його немає
+
+	var result struct {
+		Seq int `bson:"seq"`
+	}
+
+	// Повертаємо наступне значення ID
+	err := db.GetCountersCollection().FindOneAndUpdate(context.TODO(), filter, update, opts).Decode(&result)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get next userID: %v", err)
+	}
+	return result.Seq, nil
 }
 
 // Функція для отримання користувача за email
@@ -31,8 +53,17 @@ func GetUserByEmail(email string) (models.User, error) {
 
 // Функція для створення нового користувача
 func CreateUser(user models.User) (models.User, error) {
+	// Отримуємо наступний userID
+	userID, err := GetNextUserID()
+	if err != nil {
+		return models.User{}, err
+	}
+
+	// Встановлюємо отриманий userID
+	user.UserID = userID
+
 	// Вставка нового користувача
-	_, err := userCollection.InsertOne(context.TODO(), user)
+	_, err = userCollection.InsertOne(context.TODO(), user)
 	if err != nil {
 		return models.User{}, err
 	}

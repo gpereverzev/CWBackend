@@ -14,6 +14,7 @@ var categoryCollection *mongo.Collection
 var transactionCollection *mongo.Collection
 var budgetCollection *mongo.Collection
 var goalCollection *mongo.Collection
+var countersCollection *mongo.Collection
 
 func init() {
 	// Створення параметрів підключення
@@ -34,6 +35,7 @@ func init() {
 	log.Println("Connected to MongoDB")
 
 	// Ініціалізація колекції після успішного підключення
+	countersCollection = Client.Database("cashWiseDB").Collection("counters")
 	categoryCollection = Client.Database("cashWiseDB").Collection("Category")
 	transactionCollection = Client.Database("cashWiseDB").Collection("Transactions")
 	budgetCollection = Client.Database("cashWiseDB").Collection("Budgets")
@@ -68,4 +70,11 @@ func GetGoalCollection() *mongo.Collection {
 		goalCollection = Client.Database("cashWiseDB").Collection("Goals")
 	}
 	return goalCollection
+}
+
+func GetCountersCollection() *mongo.Collection {
+	if countersCollection == nil {
+		countersCollection = Client.Database("cashWiseDB").Collection("counters")
+	}
+	return countersCollection
 }

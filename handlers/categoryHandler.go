@@ -31,24 +31,34 @@ func CreateCategory(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Category created successfully"})
 }
 
-// GetCategories - обробляє запит на отримання всіх категорій
-func GetCategories(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	budgetIDStr := params["budgetID"]
-	budgetID, err := strconv.Atoi(budgetIDStr)
-	if err != nil {
-		http.Error(w, "Invalid budget ID", http.StatusBadRequest)
+// GetAllCategoriesByUserID - отримує всі категорії для конкретного користувача за його userID, переданим у query string
+func GetAllCategoriesByUserID(w http.ResponseWriter, r *http.Request) {
+	// Отримуємо параметр userID з query string
+	userIDStr := r.URL.Query().Get("userID")
+	if userIDStr == "" {
+		http.Error(w, "userID is required", http.StatusBadRequest)
 		return
 	}
 
-	categories, err := repo.GetCategories(budgetID)
+	// Перетворюємо userID в ціле число
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid userID: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Отримуємо всі категорії для конкретного користувача
+	categories, err := repo.GetAllCategoriesByUserIDLogic(userID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error retrieving categories: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(categories)
+	// Повертаємо категорії у форматі JSON
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(categories); err != nil {
+		http.Error(w, fmt.Sprintf("Error encoding categories: %v", err), http.StatusInternalServerError)
+	}
 }
 
 // GetCategoryByID - обробляє запит на отримання категорії за її ID
@@ -169,4 +179,31 @@ func GetCategoriesByBudgetID(w http.ResponseWriter, r *http.Request) {
 	// Повертаємо категорії у відповіді
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(categories)
+}
+
+// GetCategoryByName - отримує категорію за її назвою через query string
+func GetCategoryByName(w http.ResponseWriter, r *http.Request) {
+	// Отримуємо параметр name з query string
+	categoryName := r.URL.Query().Get("name")
+	if categoryName == "" {
+		http.Error(w, "name parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	// Викликаємо репозиторій для отримання категорії за назвою
+	category, err := repo.GetCategoriesByName(categoryName)
+	if err != nil {
+		if err.Error() == "mongo: no documents in result" {
+			http.Error(w, "Category not found", http.StatusNotFound)
+		} else {
+			http.Error(w, fmt.Sprintf("Error retrieving category: %v", err), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Повертаємо знайдену категорію у форматі JSON
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(category); err != nil {
+		http.Error(w, fmt.Sprintf("Error encoding category: %v", err), http.StatusInternalServerError)
+	}
 }
