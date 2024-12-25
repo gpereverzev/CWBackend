@@ -11,13 +11,44 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// AddTransaction - додає нову транзакцію
+// GetNextTransactionID отримує наступний унікальний ID для транзакції
+func GetNextTransactionID() (int, error) {
+	// Оновлюємо лічильник в колекції Counters
+	filter := bson.M{"_id": "transactionID"} // використаємо "transactionID" як ідентифікатор лічильника
+	update := bson.M{
+		"$inc": bson.M{"seq": 1}, // інкрементуємо значення на 1
+	}
+	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After) // створити документ, якщо його немає
+
+	var result struct {
+		Seq int `bson:"seq"`
+	}
+
+	// Повертаємо наступне значення ID
+	err := db.GetCountersCollection().FindOneAndUpdate(context.TODO(), filter, update, opts).Decode(&result)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get next transactionID: %v", err)
+	}
+	return result.Seq, nil
+}
+
+// AddTransaction додає нову транзакцію
 func AddTransaction(transaction models.Transaction) error {
 	collection := db.GetTransactionCollection()
 
-	_, err := collection.InsertOne(context.TODO(), transaction)
+	// Отримуємо новий transactionID
+	transactionID, err := GetNextTransactionID()
+	if err != nil {
+		return fmt.Errorf("failed to get next transaction ID: %v", err)
+	}
+
+	// Призначаємо новий ID транзакції
+	transaction.TransactionID = transactionID
+
+	_, err = collection.InsertOne(context.TODO(), transaction)
 	return err
 }
 
