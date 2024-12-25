@@ -65,35 +65,35 @@ func DeleteGoal(goalID int) error {
 	return nil
 }
 
-// UpdateProgress - оновлює статус прогресу фінансової цілі
-func UpdateProgress(goalID int, addedAmount float64) error {
-	collection := db.GetGoalCollection()
-	filter := bson.M{"goalID": goalID}
+// // UpdateProgress - оновлює статус прогресу фінансової цілі
+// func UpdateProgress(goalID int, addedAmount float64) error {
+// 	collection := db.GetGoalCollection()
+// 	filter := bson.M{"goalID": goalID}
 
-	// Знайти поточний стан цілі
-	var goal models.Goal
-	err := collection.FindOne(context.TODO(), filter).Decode(&goal)
-	if err != nil {
-		log.Printf("Error fetching goal: %v", err)
-		return fmt.Errorf("error fetching goal: %v", err)
-	}
+// 	// Знайти поточний стан цілі
+// 	var goal models.Goal
+// 	err := collection.FindOne(context.TODO(), filter).Decode(&goal)
+// 	if err != nil {
+// 		log.Printf("Error fetching goal: %v", err)
+// 		return fmt.Errorf("error fetching goal: %v", err)
+// 	}
 
-	// Оновити поточну суму
-	newCurrentAmount := goal.CurrentAmount + addedAmount
-	update := bson.M{"$set": bson.M{"currentAmount": newCurrentAmount}}
+// 	// Оновити поточну суму
+// 	newCurrentAmount := goal.CurrentAmount + addedAmount
+// 	update := bson.M{"$set": bson.M{"currentAmount": newCurrentAmount}}
 
-	if newCurrentAmount >= goal.TargetAmount {
-		update["$set"].(bson.M)["status"] = "completed"
-	}
+// 	if newCurrentAmount >= goal.TargetAmount {
+// 		update["$set"].(bson.M)["status"] = "completed"
+// 	}
 
-	_, err = collection.UpdateOne(context.TODO(), filter, update)
-	if err != nil {
-		log.Printf("Error updating progress: %v", err)
-		return fmt.Errorf("error updating progress: %v", err)
-	}
+// 	_, err = collection.UpdateOne(context.TODO(), filter, update)
+// 	if err != nil {
+// 		log.Printf("Error updating progress: %v", err)
+// 		return fmt.Errorf("error updating progress: %v", err)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // SendReminder - надсилає нагадування про дедлайн або прогрес
 func SendReminder(goalID int, reminder string) error {
@@ -119,4 +119,34 @@ func GetGoalByID(goalID int) (models.Goal, error) {
 	}
 
 	return goal, nil
+}
+
+// GetGoalsByUserID - отримує всі цілі для конкретного користувача за його userID
+func GetGoalsByUserID(userID int) ([]models.Goal, error) {
+	collection := db.GetGoalCollection()
+	filter := bson.M{"userID": userID} // Фільтруємо за userID
+
+	var goals []models.Goal
+	cursor, err := collection.Find(context.TODO(), filter)
+	if err != nil {
+		log.Printf("Error fetching goals for userID %d: %v", userID, err)
+		return nil, fmt.Errorf("error fetching goals for userID %d: %v", userID, err)
+	}
+	defer cursor.Close(context.TODO())
+
+	for cursor.Next(context.TODO()) {
+		var goal models.Goal
+		if err := cursor.Decode(&goal); err != nil {
+			log.Printf("Error decoding goal: %v", err)
+			return nil, fmt.Errorf("error decoding goal: %v", err)
+		}
+		goals = append(goals, goal)
+	}
+
+	if err := cursor.Err(); err != nil {
+		log.Printf("Cursor error: %v", err)
+		return nil, fmt.Errorf("cursor error: %v", err)
+	}
+
+	return goals, nil
 }

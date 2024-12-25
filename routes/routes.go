@@ -39,12 +39,13 @@ func InitializeRoutes() *mux.Router {
 	r.HandleFunc("/transaction/getTotalExpense", handlers.GetTotalExpense).Methods("GET") // Отримати загальну суму витрат для userID
 	r.HandleFunc("/transaction/getTotalIncome", handlers.GetTotalIncome).Methods("GET")   // Отримати загальну суму доходів для userID
 
-	r.HandleFunc("/transaction", handlers.AddTransaction).Methods("POST")                      // Додати транзакцію
-	r.HandleFunc("/transaction/{transactionID}", handlers.EditTransaction).Methods("PUT")      // Редагувати транзакцію
-	r.HandleFunc("/transaction/{transactionID}", handlers.DeleteTransaction).Methods("DELETE") // Видалити транзакцію
-	r.HandleFunc("/transactions/filter", handlers.FilterByDate).Methods("GET")                 // Фільтрувати транзакції за датою
-	r.HandleFunc("/transactions/balance", handlers.CalculateBalance).Methods("GET")            // Розрахувати баланс
-	r.HandleFunc("/transactions", handlers.GetAllTransactions).Methods("GET")                  // Отримати всі транзакції
+	r.HandleFunc("/transaction", handlers.AddTransaction).Methods("POST")                             // Додати транзакцію
+	r.HandleFunc("/transaction/{transactionID}", handlers.EditTransaction).Methods("PUT")             // Редагувати транзакцію
+	r.HandleFunc("/transaction/{transactionID}", handlers.DeleteTransaction).Methods("DELETE")        // Видалити транзакцію
+	r.HandleFunc("/transactions/filter", handlers.FilterByDate).Methods("GET")                        // Фільтрувати транзакції за датою
+	r.HandleFunc("/transactions/balance", handlers.CalculateBalance).Methods("GET")                   // Розрахувати баланс
+	r.HandleFunc("/transactions", handlers.GetAllTransactions).Methods("GET")                         // Отримати всі транзакції
+	r.HandleFunc("/transactions-goal", handlers.GetTransactionsByUserIDAndTypeHandler).Methods("GET") // Отримати всі транзакції за userID та type
 
 	r.HandleFunc("/budgets", handlers.CreateBudget).Methods("POST") // Створити бюджет
 
@@ -58,11 +59,12 @@ func InitializeRoutes() *mux.Router {
 	r.HandleFunc("/budgets/{budgetID}/check-limit", handlers.CheckLimit).Methods("GET")
 
 	//Получение текущих накоплений
-	r.HandleFunc("/goals", handlers.CreateGoalHandler).Methods("POST")                        // Створення нової фінансової цілі
-	r.HandleFunc("/goals/{goalID}", handlers.EditGoalHandler).Methods("PUT")                  // Оновлення існуючої цілі
-	r.HandleFunc("/goals/{goalID}", handlers.DeleteGoalHandler).Methods("DELETE")             // Видалення цілі
-	r.HandleFunc("/goals/{goalID}/progress", handlers.UpdateProgressHandler).Methods("PATCH") // Оновлення прогресу
-	r.HandleFunc("/goals/{goalID}/reminder", handlers.SendReminderHandler).Methods("POST")    // Надсилання нагадування
+	r.HandleFunc("/goals", handlers.CreateGoalHandler).Methods("POST")            // Створення нової фінансової цілі
+	r.HandleFunc("/goals/{goalID}", handlers.EditGoalHandler).Methods("PUT")      // Оновлення існуючої цілі
+	r.HandleFunc("/goals/{goalID}", handlers.DeleteGoalHandler).Methods("DELETE") // Видалення цілі
+	//r.HandleFunc("/goals/{goalID}/progress", handlers.UpdateProgressHandler).Methods("PATCH") // Оновлення прогресу
+	r.HandleFunc("/goals/{goalID}/reminder", handlers.SendReminderHandler).Methods("POST") // Надсилання нагадування
+	r.HandleFunc("/goals", handlers.GetGoalsByUserIDHandler).Methods("GET")                // Отримання всіх цілей юзера
 	return r
 }
 

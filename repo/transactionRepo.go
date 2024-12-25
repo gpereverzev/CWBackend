@@ -4,6 +4,7 @@ import (
 	"cashWise/db"
 	"cashWise/models"
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -144,11 +145,11 @@ func GetAllTransactions(userID int) ([]models.Transaction, error) {
 }
 
 // Функція для фільтрації витрат
-func FilterExpenseTransactions(userID int) bson.M {
-	// Повертаємо фільтр, який шукає транзакції типу "expense" і належність до певного користувача
+func FilterExpenseTransactions(userID int, transactionTypes []string) bson.M {
+	// Повертаємо фільтр, який шукає транзакції з одним з типів з переданого списку і належність до певного користувача
 	return bson.M{
-		"type":   "expense", // Тип транзакції має бути "expense"
-		"userID": userID,    // Фільтруємо по userID
+		"type":   bson.M{"$in": transactionTypes}, // Використовуємо $in для кількох типів транзакцій
+		"userID": userID,                          // Фільтруємо по userID
 	}
 }
 
@@ -158,7 +159,7 @@ func CalculateTotalExpense(userID int) (float64, error) {
 	collection := db.GetTransactionCollection()
 
 	// Фільтр для вибору транзакцій з типом "expense" і належністю конкретному користувачу
-	filter := FilterExpenseTransactions(userID)
+	filter := FilterExpenseTransactions(userID, []string{"expense", "goal"})
 
 	// Контекст із таймаутом
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -259,6 +260,41 @@ func GetAllTransactionsByUser(userID int) ([]models.Transaction, error) {
 
 	if err := cursor.Err(); err != nil {
 		return nil, err
+	}
+
+	return transactions, nil
+}
+
+// GetTransactionsByUserIDAndType - отримує транзакції для конкретного користувача за userID і типом
+func GetTransactionsByUserIDAndType(userID int, transactionType string) ([]models.Transaction, error) {
+	collection := db.GetTransactionCollection()
+
+	// Фільтруємо за userID і типом транзакції
+	filter := bson.M{
+		"userID": userID,
+		"type":   transactionType,
+	}
+
+	var transactions []models.Transaction
+	cursor, err := collection.Find(context.TODO(), filter)
+	if err != nil {
+		log.Printf("Error fetching transactions for userID %d and type %s: %v", userID, transactionType, err)
+		return nil, fmt.Errorf("error fetching transactions for userID %d and type %s: %v", userID, transactionType, err)
+	}
+	defer cursor.Close(context.TODO())
+
+	for cursor.Next(context.TODO()) {
+		var transaction models.Transaction
+		if err := cursor.Decode(&transaction); err != nil {
+			log.Printf("Error decoding transaction: %v", err)
+			return nil, fmt.Errorf("error decoding transaction: %v", err)
+		}
+		transactions = append(transactions, transaction)
+	}
+
+	if err := cursor.Err(); err != nil {
+		log.Printf("Cursor error: %v", err)
+		return nil, fmt.Errorf("cursor error: %v", err)
 	}
 
 	return transactions, nil

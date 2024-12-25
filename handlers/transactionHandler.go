@@ -298,3 +298,35 @@ func CalculateBalance(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]float64{"balance": balance})
 }
+
+// GetTransactionsByUserIDAndTypeHandler - хендлер для отримання транзакцій по userID і типу
+func GetTransactionsByUserIDAndTypeHandler(w http.ResponseWriter, r *http.Request) {
+	// Отримуємо userID і тип транзакції з параметрів запиту
+	userIDStr := r.URL.Query().Get("userID")
+	transactionType := r.URL.Query().Get("type")
+
+	if userIDStr == "" || transactionType == "" {
+		http.Error(w, "Missing userID or type parameter", http.StatusBadRequest)
+		return
+	}
+
+	// Перетворення userID на ціле число
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, "Invalid userID format", http.StatusBadRequest)
+		return
+	}
+
+	// Викликаємо репозиторій для отримання транзакцій
+	transactions, err := repo.GetTransactionsByUserIDAndType(userID, transactionType)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error fetching transactions for userID %d and type %s: %v", userID, transactionType, err), http.StatusInternalServerError)
+		return
+	}
+
+	// Повертаємо знайдені транзакції у форматі JSON
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(transactions); err != nil {
+		http.Error(w, fmt.Sprintf("Error encoding transactions to JSON: %v", err), http.StatusInternalServerError)
+	}
+}
