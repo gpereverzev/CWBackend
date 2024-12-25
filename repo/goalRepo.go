@@ -10,17 +10,52 @@ import (
 	"cashWise/models"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// CreateGoal - створює нову фінансову ціль
+// GetNextGoalID - отримує наступний ID для фінансової цілі
+func GetNextGoalID() (int, error) {
+	// Оновлюємо лічильник в колекції Counters
+	filter := bson.M{"_id": "goalID"} // ми будемо використовувати "goalID" як ідентифікатор лічильника
+	update := bson.M{
+		"$inc": bson.M{"seq": 1}, // інкрементуємо значення на 1
+	}
+	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After) // створити документ, якщо його немає
+
+	var result struct {
+		Seq int `bson:"seq"`
+	}
+
+	// Повертаємо наступне значення ID
+	err := db.GetCountersCollection().FindOneAndUpdate(context.TODO(), filter, update, opts).Decode(&result)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get next goalID: %v", err)
+	}
+	return result.Seq, nil
+}
+
+// CreateGoal - створює нову фінансову ціль з автоінкрементом
 func CreateGoal(goal models.Goal) error {
 	collection := db.GetGoalCollection()
+
+	// Отримуємо наступний доступний ID для цілі
+	goalID, err := GetNextGoalID()
+	if err != nil {
+		log.Printf("Error getting next goalID: %v", err)
+		return fmt.Errorf("error getting next goalID: %v", err)
+	}
+
+	// Призначаємо цей ID фінансовій цілі
+	goal.GoalID = goalID
 	goal.Status = "in progress"
-	_, err := collection.InsertOne(context.TODO(), goal)
+
+	// Вставляємо нову ціль в колекцію
+	_, err = collection.InsertOne(context.TODO(), goal)
 	if err != nil {
 		log.Printf("Error creating goal: %v", err)
 		return fmt.Errorf("error creating goal: %v", err)
 	}
+
 	return nil
 }
 
