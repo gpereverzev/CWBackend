@@ -43,7 +43,7 @@ func getNextSequence(sequenceName string) (int, error) {
 	return result.Seq, nil
 }
 
-// AddCategory - додає нову категорію з автоінкрементом
+// AddCategory - додає нову категорію з автоінкрементом і іконкою
 func AddCategory(category models.Category) error {
 	collection := db.GetCategoryCollection()
 
@@ -55,13 +55,19 @@ func AddCategory(category models.Category) error {
 	}
 	category.CategoryID = categoryID
 
+	// Перевірка наявності іконки
+	if category.Icon == "" {
+		log.Println("Category icon is empty, setting default icon")
+		category.Icon = "default-icon.png" // Можна вказати стандартну іконку, якщо вона не надана
+	}
+
 	// Додаємо категорію через InsertOne
 	_, err = collection.InsertOne(context.TODO(), category)
 	if err != nil {
 		log.Printf("Error inserting category: %v", err)
 		return err
 	}
-	log.Println("Category added successfully")
+	log.Println("Category added successfully with ID and Icon")
 	return nil
 }
 
@@ -121,6 +127,9 @@ func UpdateCategory(userID int, categoryID int, updatedCategory models.Category)
 	}
 	if updatedCategory.Description != "" {
 		update["$set"].(bson.M)["description"] = updatedCategory.Description
+	}
+	if updatedCategory.Icon != "" {
+		update["$set"].(bson.M)["icon"] = updatedCategory.Icon
 	}
 
 	// Виконання оновлення
