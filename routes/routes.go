@@ -28,12 +28,15 @@ func InitializeRoutes() *mux.Router {
 	// Роут для отримання даних користувача по його айдi
 	r.HandleFunc("/getUserByID/{id}", handlers.GetUserByID).Methods("GET")
 
+	r.HandleFunc("/settings/toggle-dark-theme", handlers.HandleToggleDarkTheme).Methods("POST")
+
 	// Маршрути для категорій
 	r.HandleFunc("/create-category", handlers.CreateCategory).Methods("POST")
 	r.HandleFunc("/edit-category/{categoryID}", handlers.EditCategory).Methods("PUT")
 	r.HandleFunc("/delete-category/{categoryID}", handlers.DeleteCategory).Methods("DELETE")
 	r.HandleFunc("/categories", handlers.GetAllCategoriesByUserID).Methods("GET")
 	r.HandleFunc("/category", handlers.GetCategoryByName).Methods("GET")
+	r.HandleFunc("/get/category", handlers.GetCategoryByID).Methods("GET")
 
 	// main.go
 

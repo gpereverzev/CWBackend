@@ -3,8 +3,10 @@ package db
 
 import (
 	"context"
+	"errors"
 	"log"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -15,6 +17,7 @@ var transactionCollection *mongo.Collection
 var budgetCollection *mongo.Collection
 var goalCollection *mongo.Collection
 var countersCollection *mongo.Collection
+var settingCollection *mongo.Collection
 
 func init() {
 	// Створення параметрів підключення
@@ -40,6 +43,7 @@ func init() {
 	transactionCollection = Client.Database("cashWiseDB").Collection("Transactions")
 	budgetCollection = Client.Database("cashWiseDB").Collection("Budgets")
 	goalCollection = Client.Database("cashWiseDB").Collection("Goals")
+	settingCollection = Client.Database("cashWiseDB").Collection("Settings")
 }
 
 // GetCategoryCollection - повертає колекцію категорій
@@ -77,4 +81,48 @@ func GetCountersCollection() *mongo.Collection {
 		countersCollection = Client.Database("cashWiseDB").Collection("counters")
 	}
 	return countersCollection
+}
+
+func GetSettingCollection() *mongo.Collection {
+	if settingCollection == nil {
+		settingCollection = Client.Database("cashWiseDB").Collection("Settings")
+	}
+	return settingCollection
+}
+
+// ToggleDarkTheme - встановлює darkTheme на протилежне значення
+func ToggleDarkTheme(userID int) error {
+	collection := GetSettingCollection()
+
+	// Знаходимо поточний стан darkTheme
+	filter := bson.M{"userID": userID}
+	var currentSetting bson.M
+	err := collection.FindOne(context.TODO(), filter).Decode(&currentSetting)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			log.Printf("Settings for userID %d not found", userID)
+			return errors.New("settings not found")
+		}
+		log.Printf("Error retrieving settings for userID %d: %v", userID, err)
+		return err
+	}
+
+	// Витягуємо поточне значення darkTheme
+	currentDarkTheme, ok := currentSetting["darkTheme"].(bool)
+	if !ok {
+		log.Printf("Invalid data format for darkTheme for userID %d", userID)
+		return errors.New("invalid data format for darkTheme")
+	}
+
+	// Перемикаємо значення
+	update := bson.M{"$set": bson.M{"darkTheme": !currentDarkTheme}}
+
+	// Оновлюємо документ
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		log.Printf("Failed to update darkTheme for userID %d: %v", userID, err)
+		return err
+	}
+
+	return nil
 }

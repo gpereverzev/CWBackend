@@ -61,15 +61,22 @@ func GetAllCategoriesByUserID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetCategoryByID - обробляє запит на отримання категорії за її ID
+// GetCategoryByID - обробляє запит на отримання категорії за userID та categoryID з query параметрів
 func GetCategoryByID(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	budgetIDStr := params["budgetID"]
-	categoryIDStr := params["categoryID"]
+	// Отримуємо параметри з query string
+	userIDStr := r.URL.Query().Get("userID")         // Отримуємо userID з query параметрів
+	categoryIDStr := r.URL.Query().Get("categoryID") // Отримуємо categoryID з query параметрів
 
-	budgetID, err := strconv.Atoi(budgetIDStr)
+	// Перевіряємо, чи є обидва параметри
+	if userIDStr == "" || categoryIDStr == "" {
+		http.Error(w, "Missing userID or categoryID", http.StatusBadRequest)
+		return
+	}
+
+	// Перетворюємо userID та categoryID на цілі числа
+	userID, err := strconv.Atoi(userIDStr)
 	if err != nil {
-		http.Error(w, "Invalid budget ID", http.StatusBadRequest)
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
 		return
 	}
 
@@ -79,12 +86,17 @@ func GetCategoryByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	category, err := repo.GetCategoryByID(budgetID, categoryID)
+	// Викликаємо репозиторій для отримання категорії за userID та categoryID
+	category, err := repo.GetCategoryByID(userID, categoryID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error retrieving category: %v", err), http.StatusNotFound)
 		return
 	}
 
+	// Встановлюємо заголовок Content-Type на application/json
+	w.Header().Set("Content-Type", "application/json")
+
+	// Повертаємо знайдену категорію у форматі JSON
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(category)
 }

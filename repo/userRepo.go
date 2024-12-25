@@ -51,12 +51,12 @@ func GetUserByEmail(email string) (models.User, error) {
 	return user, nil
 }
 
-// Функція для створення нового користувача
+// CreateUser - створює нового користувача і додає налаштування за замовчуванням
 func CreateUser(user models.User) (models.User, error) {
 	// Отримуємо наступний userID
 	userID, err := GetNextUserID()
 	if err != nil {
-		return models.User{}, err
+		return models.User{}, fmt.Errorf("failed to get next user ID: %v", err)
 	}
 
 	// Встановлюємо отриманий userID
@@ -65,7 +65,26 @@ func CreateUser(user models.User) (models.User, error) {
 	// Вставка нового користувача
 	_, err = userCollection.InsertOne(context.TODO(), user)
 	if err != nil {
-		return models.User{}, err
+		return models.User{}, fmt.Errorf("failed to insert user: %v", err)
+	}
+
+	// Створення початкових налаштувань для нового користувача
+	settings := models.Settings{
+		UserID:    userID,
+		DarkTheme: false,
+	}
+
+	// Додаємо документ у колекцію Settings
+	_, err = db.GetSettingCollection().InsertOne(context.TODO(), settings)
+	if err != nil {
+		// Якщо виникає помилка, видаляємо користувача, щоб уникнути розсинхронізації
+		_, deleteErr := userCollection.DeleteOne(context.TODO(), bson.M{"userID": userID})
+		if deleteErr != nil {
+			return models.User{}, fmt.Errorf(
+				"failed to create settings and cleanup user: %v; delete error: %v", err, deleteErr,
+			)
+		}
+		return models.User{}, fmt.Errorf("failed to create settings: %v", err)
 	}
 
 	return user, nil
