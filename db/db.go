@@ -126,3 +126,77 @@ func ToggleDarkTheme(userID int) error {
 
 	return nil
 }
+
+// ToggleTermsCondition - встановлює termsCondition на протилежне значення
+func ToggleTermsCondition(userID int) error {
+	collection := GetSettingCollection()
+
+	// Знаходимо поточний стан termsCondition
+	filter := bson.M{"userID": userID}
+	var currentSetting bson.M
+	err := collection.FindOne(context.TODO(), filter).Decode(&currentSetting)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			log.Printf("Settings for userID %d not found", userID)
+			return errors.New("settings not found")
+		}
+		log.Printf("Error retrieving settings for userID %d: %v", userID, err)
+		return err
+	}
+
+	// Витягуємо поточне значення termsCondition
+	currentTermsCondition, ok := currentSetting["termsCondition"].(bool)
+	if !ok {
+		log.Printf("Invalid data format for termsCondition for userID %d", userID)
+		return errors.New("invalid data format for termsCondition")
+	}
+
+	// Перемикаємо значення
+	update := bson.M{"$set": bson.M{"termsCondition": !currentTermsCondition}}
+
+	// Оновлюємо документ
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		log.Printf("Failed to update termsCondition for userID %d: %v", userID, err)
+		return err
+	}
+
+	return nil
+}
+
+// ToggleNotifications - перемикає налаштування notifications для користувача
+func ToggleNotifications(userID int) error {
+	collection := GetSettingCollection()
+
+	// Знаходимо поточний стан notifications
+	filter := bson.M{"userID": userID}
+	var currentSetting bson.M
+	err := collection.FindOne(context.TODO(), filter).Decode(&currentSetting)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			log.Printf("Settings for userID %d not found", userID)
+			return errors.New("settings not found")
+		}
+		log.Printf("Error retrieving settings for userID %d: %v", userID, err)
+		return err
+	}
+
+	// Витягуємо поточне значення notifications
+	currentNotifications, ok := currentSetting["notifications"].(bool)
+	if !ok {
+		log.Printf("Invalid data format for notifications for userID %d", userID)
+		return errors.New("invalid data format for notifications")
+	}
+
+	// Перемикаємо значення
+	update := bson.M{"$set": bson.M{"notifications": !currentNotifications}}
+
+	// Оновлюємо документ
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		log.Printf("Failed to update notifications for userID %d: %v", userID, err)
+		return err
+	}
+
+	return nil
+}

@@ -20,7 +20,7 @@ func InitializeRoutes() *mux.Router {
 	r.HandleFunc("/login", handlers.LoginUser).Methods("POST")
 
 	// Роут для зміни даних користувача
-	r.HandleFunc("/update-user/{userID}", handlers.UpdateUser).Methods("PUT")
+	r.HandleFunc("/update-user", handlers.UpdateUser).Methods("PUT")
 
 	// Маршрут для видалення акаунту
 	r.HandleFunc("/delete-user/{userID}", handlers.DeleteUser).Methods("DELETE")
@@ -29,6 +29,10 @@ func InitializeRoutes() *mux.Router {
 	r.HandleFunc("/getUserByID/{id}", handlers.GetUserByID).Methods("GET")
 
 	r.HandleFunc("/settings/toggle-dark-theme", handlers.HandleToggleDarkTheme).Methods("POST")
+	r.HandleFunc("/settings/toggle-terms-condition", handlers.ToggleTermsConditionHandler).Methods("POST")
+	r.HandleFunc("/settings/notification", handlers.ToggleNotificationsHandler).Methods("POST")
+
+	r.HandleFunc("/getUserAndSettings", handlers.GetUserAndSettingsHandler).Methods("GET")
 
 	// Маршрути для категорій
 	r.HandleFunc("/create-category", handlers.CreateCategory).Methods("POST")
@@ -50,6 +54,8 @@ func InitializeRoutes() *mux.Router {
 	r.HandleFunc("/transactions/balance", handlers.CalculateBalance).Methods("GET")                   // Розрахувати баланс
 	r.HandleFunc("/transactions", handlers.GetAllTransactions).Methods("GET")                         // Отримати всі транзакції
 	r.HandleFunc("/transactions-goal", handlers.GetTransactionsByUserIDAndTypeHandler).Methods("GET") // Отримати всі транзакції за userID та type
+	r.HandleFunc("/transaction/details", handlers.GetTransactionWithCategoryHandler).Methods("GET")
+	r.HandleFunc("/transactionsIcon", handlers.GetTransactionsHandler).Methods("GET")
 
 	r.HandleFunc("/budgets", handlers.CreateBudget).Methods("POST") // Створити бюджет
 

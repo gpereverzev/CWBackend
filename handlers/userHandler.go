@@ -130,24 +130,15 @@ func MockUser(role string) func(http.Handler) http.Handler {
 }
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
-	// Отримуємо роль з query параметрів
-	role := r.URL.Query().Get("role")
-	fmt.Println("Role from query:", role) // Додаємо для дебагу
-	if role == "" {
-		http.Error(w, "Role not found", http.StatusUnauthorized)
+	// Отримуємо userID з параметрів запиту
+	userIDStr := r.URL.Query().Get("userID")
+	if userIDStr == "" {
+		http.Error(w, "User ID is required", http.StatusBadRequest)
 		return
 	}
 
-	// Тільки користувачі з роллю "admin" можуть оновлювати дані інших користувачів
-	if role != "admin" {
-		http.Error(w, "Access Denied", http.StatusForbidden)
-		return
-	}
-
-	// Отримуємо userID з параметрів запиту та конвертуємо його в int
-	vars := mux.Vars(r)
-	userIDStr := vars["userID"]
-	userID, err := strconv.Atoi(userIDStr) // Перетворюємо рядок в ціле число
+	// Перетворюємо userID з рядка в ціле число
+	userID, err := strconv.Atoi(userIDStr)
 	if err != nil {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)
 		return
@@ -247,4 +238,34 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(userResponse)
+}
+
+// GetUserAndSettingsHandler - хендлер для отримання інформації по користувачу та його налаштуванням
+func GetUserAndSettingsHandler(w http.ResponseWriter, r *http.Request) {
+	// Отримуємо userID з параметрів запиту
+	userIDStr := r.URL.Query().Get("userID")
+	if userIDStr == "" {
+		http.Error(w, "User ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Перетворюємо userID з рядка в ціле число
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, "Invalid User ID", http.StatusBadRequest)
+		return
+	}
+
+	// Викликаємо функцію для отримання користувача та налаштувань
+	userData, err := repo.GetUserAndSettings(userID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error fetching user data: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Відправляємо дані користувача у форматі JSON
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(userData); err != nil {
+		http.Error(w, fmt.Sprintf("Error encoding user data: %v", err), http.StatusInternalServerError)
+	}
 }

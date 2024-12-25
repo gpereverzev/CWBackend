@@ -35,9 +35,14 @@ func GetNextTransactionID() (int, error) {
 	return result.Seq, nil
 }
 
-// AddTransaction додає нову транзакцію
+// AddTransaction додає нову транзакцію з категорією
 func AddTransaction(transaction models.Transaction) error {
 	collection := db.GetTransactionCollection()
+
+	// Перевіряємо, чи є categoryID у транзакції
+	if transaction.CategoryID == 0 {
+		return fmt.Errorf("categoryID is required")
+	}
 
 	// Отримуємо новий transactionID
 	transactionID, err := GetNextTransactionID()
@@ -48,6 +53,7 @@ func AddTransaction(transaction models.Transaction) error {
 	// Призначаємо новий ID транзакції
 	transaction.TransactionID = transactionID
 
+	// Вставка транзакції в колекцію
 	_, err = collection.InsertOne(context.TODO(), transaction)
 	return err
 }
@@ -76,7 +82,7 @@ func EditTransaction(transactionID int, transaction models.Transaction) error {
 		update["$set"].(bson.M)["amount"] = transaction.Amount
 	}
 	if transaction.CategoryID != 0 {
-		update["$set"].(bson.M)["category"] = transaction.CategoryID
+		update["$set"].(bson.M)["categoryID"] = transaction.CategoryID // Оновлюємо categoryID
 	}
 	if transaction.Description != "" {
 		update["$set"].(bson.M)["description"] = transaction.Description

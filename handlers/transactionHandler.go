@@ -3,12 +3,14 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
 
 	"cashWise/models"
 	"cashWise/repo"
+	"cashWise/service"
 
 	"github.com/gorilla/mux"
 )
@@ -328,5 +330,63 @@ func GetTransactionsByUserIDAndTypeHandler(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(transactions); err != nil {
 		http.Error(w, fmt.Sprintf("Error encoding transactions to JSON: %v", err), http.StatusInternalServerError)
+	}
+}
+
+// GetTransactionWithCategoryHandler - обробляє запит на отримання транзакції з деталями категорії
+func GetTransactionWithCategoryHandler(w http.ResponseWriter, r *http.Request) {
+	// Отримуємо transactionID з query параметрів
+	transactionIDStr := r.URL.Query().Get("transactionID")
+	if transactionIDStr == "" {
+		http.Error(w, "Missing transactionID", http.StatusBadRequest)
+		return
+	}
+
+	transactionID, err := strconv.Atoi(transactionIDStr)
+	if err != nil {
+		http.Error(w, "Invalid transactionID", http.StatusBadRequest)
+		return
+	}
+
+	// Отримуємо дані
+	data, err := service.GetTransactionWithCategory(transactionID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error retrieving data: %v", err), http.StatusNotFound)
+		return
+	}
+
+	// Повертаємо JSON
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(data)
+}
+
+// GetTransactionsHandler - хендлер для отримання всіх транзакцій за userID
+func GetTransactionsHandler(w http.ResponseWriter, r *http.Request) {
+	// Отримуємо параметр userID з query параметрів
+	userIDStr := r.URL.Query().Get("userID")
+	if userIDStr == "" {
+		http.Error(w, "Missing userID", http.StatusBadRequest)
+		return
+	}
+
+	// Перетворюємо userID на ціле число
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, "Invalid userID", http.StatusBadRequest)
+		return
+	}
+
+	// Викликаємо сервіс для отримання транзакцій
+	transactions, err := service.GetTransactionsByUserID(userID)
+	if err != nil {
+		http.Error(w, "Error fetching transactions", http.StatusInternalServerError)
+		return
+	}
+
+	// Відправляємо результат у вигляді JSON
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(transactions); err != nil {
+		log.Printf("Error encoding response: %v", err)
 	}
 }

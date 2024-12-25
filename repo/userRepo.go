@@ -5,6 +5,7 @@ import (
 	"cashWise/db"
 	"cashWise/models"
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -70,8 +71,10 @@ func CreateUser(user models.User) (models.User, error) {
 
 	// Створення початкових налаштувань для нового користувача
 	settings := models.Settings{
-		UserID:    userID,
-		DarkTheme: false,
+		UserID:         userID,
+		DarkTheme:      false,
+		TermsCondition: false,
+		Notification:   false,
 	}
 
 	// Додаємо документ у колекцію Settings
@@ -165,4 +168,43 @@ func GetUserByID(userID int) (*models.User, error) {
 	}
 
 	return &user, nil
+}
+
+// GetUserAndSettings - отримує всю інформацію по користувачу та його налаштуванням за userID
+func GetUserAndSettings(userID int) (map[string]interface{}, error) {
+	// Отримуємо колекції для користувачів та налаштувань
+	settingsCollection := db.GetSettingCollection()
+
+	// Знаходимо користувача за userID
+	var user models.User
+	err := userCollection.FindOne(context.TODO(), bson.M{"userID": userID}).Decode(&user)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, errors.New("user not found")
+		}
+		return nil, fmt.Errorf("failed to retrieve user: %v", err)
+	}
+
+	// Знаходимо налаштування користувача
+	var settings models.Settings
+	err = settingsCollection.FindOne(context.TODO(), bson.M{"userID": userID}).Decode(&settings)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, errors.New("settings not found")
+		}
+		return nil, fmt.Errorf("failed to retrieve settings: %v", err)
+	}
+
+	// Формуємо результат
+	userData := map[string]interface{}{
+		"userID":         user.UserID,
+		"fullName":       user.FullName,
+		"email":          user.Email,
+		"profilePicture": user.ProfilePicture,
+		"role":           user.Role,
+		"darkTheme":      settings.DarkTheme,
+		"termsCondition": settings.TermsCondition,
+	}
+
+	return userData, nil
 }
