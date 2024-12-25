@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -83,6 +84,19 @@ func DeleteTransaction(userID int, transactionID int) error {
 	return nil
 }
 
+func sortTransactionsByDate(transactions []models.Transaction) ([]models.Transaction, error) {
+	sort.Slice(transactions, func(i, j int) bool {
+		dateI, errI := time.Parse("2006-01-02", transactions[i].Date)
+		dateJ, errJ := time.Parse("2006-01-02", transactions[j].Date)
+		if errI != nil || errJ != nil {
+			log.Printf("Error parsing date: %v, %v", errI, errJ)
+			return false
+		}
+		return dateI.After(dateJ) // Найновіші транзакції спочатку
+	})
+	return transactions, nil
+}
+
 // GetTransactionsByDateAndUserID - отримує транзакції за період та userID
 func GetTransactionsByDateAndUserID(startDate, endDate string, userID int) ([]models.Transaction, error) {
 	collection := db.GetTransactionCollection()
@@ -114,7 +128,7 @@ func GetTransactionsByDateAndUserID(startDate, endDate string, userID int) ([]mo
 		return nil, err
 	}
 
-	return transactions, nil
+	return sortTransactionsByDate(transactions)
 }
 
 // GetAllTransactions - отримує всі транзакції для користувача
@@ -141,7 +155,39 @@ func GetAllTransactions(userID int) ([]models.Transaction, error) {
 		return nil, err
 	}
 
-	return transactions, nil
+	return sortTransactionsByDate(transactions)
+}
+
+// GetAllTransactionsByUser - отримує всі транзакції для користувача
+func GetAllTransactionsByUser(userID int) ([]models.Transaction, error) {
+	collection := db.GetTransactionCollection()
+
+	// Фільтр для отримання всіх транзакцій користувача
+	filter := bson.M{
+		"userID": userID,
+	}
+
+	// Отримуємо всі транзакції
+	cursor, err := collection.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.TODO())
+
+	var transactions []models.Transaction
+	for cursor.Next(context.TODO()) {
+		var transaction models.Transaction
+		if err := cursor.Decode(&transaction); err != nil {
+			return nil, err
+		}
+		transactions = append(transactions, transaction)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return sortTransactionsByDate(transactions)
 }
 
 // Функція для фільтрації витрат
@@ -233,38 +279,6 @@ func CalculateTotalIncome(userID int) (float64, error) {
 	return totalAmount, nil
 }
 
-// GetAllTransactionsByUser - отримує всі транзакції для користувача
-func GetAllTransactionsByUser(userID int) ([]models.Transaction, error) {
-	collection := db.GetTransactionCollection()
-
-	// Фільтр для отримання всіх транзакцій користувача
-	filter := bson.M{
-		"userID": userID,
-	}
-
-	// Отримуємо всі транзакції
-	cursor, err := collection.Find(context.TODO(), filter)
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(context.TODO())
-
-	var transactions []models.Transaction
-	for cursor.Next(context.TODO()) {
-		var transaction models.Transaction
-		if err := cursor.Decode(&transaction); err != nil {
-			return nil, err
-		}
-		transactions = append(transactions, transaction)
-	}
-
-	if err := cursor.Err(); err != nil {
-		return nil, err
-	}
-
-	return transactions, nil
-}
-
 // GetTransactionsByUserIDAndType - отримує транзакції для конкретного користувача за userID і типом
 func GetTransactionsByUserIDAndType(userID int, transactionType string) ([]models.Transaction, error) {
 	collection := db.GetTransactionCollection()
@@ -297,5 +311,5 @@ func GetTransactionsByUserIDAndType(userID int, transactionType string) ([]model
 		return nil, fmt.Errorf("cursor error: %v", err)
 	}
 
-	return transactions, nil
+	return sortTransactionsByDate(transactions)
 }
