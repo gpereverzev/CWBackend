@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Define a custom type for the context key
@@ -267,5 +268,33 @@ func GetUserAndSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(userData); err != nil {
 		http.Error(w, fmt.Sprintf("Error encoding user data: %v", err), http.StatusInternalServerError)
+	}
+}
+
+// GetUserByEmailHandler - хендлер для отримання користувача за email
+func GetUserByEmailHandler(w http.ResponseWriter, r *http.Request) {
+	// Отримуємо email з параметрів запиту
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		http.Error(w, "Email is required", http.StatusBadRequest)
+		return
+	}
+
+	// Викликаємо функцію для отримання користувача за email
+	user, err := repo.GetUserByEmail(email)
+	if err != nil {
+		// Якщо користувач не знайдений або сталася інша помилка
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "User not found", http.StatusNotFound)
+		} else {
+			http.Error(w, fmt.Sprintf("Error fetching user: %v", err), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Повертаємо користувача у форматі JSON
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(user); err != nil {
+		http.Error(w, fmt.Sprintf("Error encoding user to JSON: %v", err), http.StatusInternalServerError)
 	}
 }

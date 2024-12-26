@@ -350,3 +350,65 @@ func GetTransactionsByUserIDAndType(userID int, transactionType string) ([]model
 
 	return sortTransactionsByDate(transactions)
 }
+
+func GetTransactionsByUserIDAndTypeWithinDateRange(userID int, transactionType string, startDate, endDate time.Time) ([]models.Transaction, error) {
+	var transactions []models.Transaction
+
+	// Фільтр MongoDB
+	filter := bson.M{
+		"userID": userID,
+		"type":   transactionType,
+		"date": bson.M{
+			"$gte": startDate,
+			"$lte": endDate,
+		},
+	}
+
+	// Виконання запиту
+	cursor, err := db.GetTransactionCollection().Find(context.TODO(), filter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query transactions: %v", err)
+	}
+	defer cursor.Close(context.TODO())
+
+	// Розпаковка результатів
+	if err := cursor.All(context.TODO(), &transactions); err != nil {
+		return nil, fmt.Errorf("failed to decode transactions: %v", err)
+	}
+
+	return transactions, nil
+}
+
+func GetTransactionsForUserAndMonth(userID int, month time.Month, year int) ([]models.Transaction, error) {
+	collection := db.GetTransactionCollection()
+
+	// Визначаємо перший та останній день місяця
+	startDate := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
+	endDate := startDate.AddDate(0, 1, 0).Add(-time.Second)
+
+	filter := bson.M{
+		"userID": userID,
+		"date":   bson.M{"$gte": startDate, "$lt": endDate},
+	}
+
+	cursor, err := collection.Find(context.Background(), filter)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching transactions: %v", err)
+	}
+	defer cursor.Close(context.Background())
+
+	var transactions []models.Transaction
+	for cursor.Next(context.Background()) {
+		var transaction models.Transaction
+		if err := cursor.Decode(&transaction); err != nil {
+			return nil, fmt.Errorf("error decoding transaction: %v", err)
+		}
+		transactions = append(transactions, transaction)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, fmt.Errorf("cursor error: %v", err)
+	}
+
+	return transactions, nil
+}

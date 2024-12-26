@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -63,6 +64,12 @@ func CreateUser(user models.User) (models.User, error) {
 	// Встановлюємо отриманий userID
 	user.UserID = userID
 
+	// Встановлюємо роль користувача як "user"
+	user.Role = "user"
+
+	// Вставка нового користувача без profilePicture
+	user.ProfilePicture = "" // або можна просто не вказувати це поле
+
 	// Вставка нового користувача
 	_, err = userCollection.InsertOne(context.TODO(), user)
 	if err != nil {
@@ -74,7 +81,7 @@ func CreateUser(user models.User) (models.User, error) {
 		UserID:         userID,
 		DarkTheme:      false,
 		TermsCondition: false,
-		Notification:   false,
+		Notifications:  false,
 	}
 
 	// Додаємо документ у колекцію Settings
@@ -195,6 +202,9 @@ func GetUserAndSettings(userID int) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("failed to retrieve settings: %v", err)
 	}
 
+	// Логування для перевірки
+	log.Printf("Settings for userID %d: %+v", userID, settings)
+
 	// Формуємо результат
 	userData := map[string]interface{}{
 		"userID":         user.UserID,
@@ -204,7 +214,23 @@ func GetUserAndSettings(userID int) (map[string]interface{}, error) {
 		"role":           user.Role,
 		"darkTheme":      settings.DarkTheme,
 		"termsCondition": settings.TermsCondition,
+		"notifications":  settings.Notifications, // Перевір, чи правильне ім'я поля в твоїй моделі
 	}
 
 	return userData, nil
+}
+
+func GetSettingsByUserID(userID int) (*models.Settings, error) {
+	var settings models.Settings
+
+	// Фільтр MongoDB
+	filter := bson.M{"userID": userID}
+
+	// Знаходимо налаштування
+	err := db.GetSettingCollection().FindOne(context.TODO(), filter).Decode(&settings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get settings for userID %d: %v", userID, err)
+	}
+
+	return &settings, nil
 }

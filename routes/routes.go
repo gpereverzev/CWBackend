@@ -27,6 +27,7 @@ func InitializeRoutes() *mux.Router {
 
 	// Роут для отримання даних користувача по його айдi
 	r.HandleFunc("/getUserByID/{id}", handlers.GetUserByID).Methods("GET")
+	r.HandleFunc("/userByEmail", handlers.GetUserByEmailHandler).Methods("GET")
 
 	r.HandleFunc("/settings/toggle-dark-theme", handlers.HandleToggleDarkTheme).Methods("POST")
 	r.HandleFunc("/settings/toggle-terms-condition", handlers.ToggleTermsConditionHandler).Methods("POST")
@@ -75,6 +76,10 @@ func InitializeRoutes() *mux.Router {
 	//r.HandleFunc("/goals/{goalID}/progress", handlers.UpdateProgressHandler).Methods("PATCH") // Оновлення прогресу
 	r.HandleFunc("/goals/{goalID}/reminder", handlers.SendReminderHandler).Methods("POST") // Надсилання нагадування
 	r.HandleFunc("/goals", handlers.GetGoalsByUserIDHandler).Methods("GET")                // Отримання всіх цілей юзера
+
+	// Роут для нагадування про транзакції "goal"
+	r.HandleFunc("/goal-reminder", handlers.ToggleGoalReminderHandler).Methods("GET")
+
 	return r
 }
 
